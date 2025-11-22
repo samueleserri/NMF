@@ -21,19 +21,6 @@ class SepNMF(NMF):
          H for V ≈ V[:, K] @ H,
       4. updates the residual R = V - V[:, K] @ H,
       5. repeats until `rank` columns are selected.
-    Notes
-    -----
-    - Input V must be non-negative. This implementation treats V as a dense
-      array-like (the class type hint uses NonNegMatrix).
-    - The NNLS step is implemented here via unconstrained least squares
-      followed by clipping to non-negativity (np.maximum). For improved
-      numerical correctness and performance, replace that step with a proper
-      NNLS solver (e.g. scipy.optimize.nnls or a block NNLS routine).
-    - The class exposes attributes similar to scikit-learn estimators:
-      - W: the basis matrix (selected columns of V)
-      - H: the coefficient matrix
-      - components_: alias for H for compatibility with sklearn-style code
-      - fit_time, n_iter, time_per_iter, errors
 
     Example
     -------
