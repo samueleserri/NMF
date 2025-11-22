@@ -3,7 +3,6 @@ import numpy as np
 class NonNegMatrix(np.ndarray):
     """
     NumPy ndarray subclass that enforces non-negativity on construction.
-    Accepts dense arrays and scipy sparse matrices (converts sparse -> dense).
     """
 
     def __new__(cls, input_array):
