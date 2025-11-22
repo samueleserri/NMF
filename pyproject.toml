@@ -1,0 +1,27 @@
+[project]
+
+name = "NMF"
+version = "0.1.0"
+description = "implementation of algorithms for Non-negative matrix factorization."
+readme = "README.md"
+requires-python = ">=3.8"
+license = { text = "MIT" }
+authors = [{ name = "Samuele Serri"}]
+keywords = ["nmf", "non-negative-matrix-factorization", "matrix-decomposition"]
+classifiers = [
+  "License :: OSI Approved :: MIT License",
+  "Programming Language :: Python",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.8",
+  "Topic :: Numerical analysis/Machine learning"
+]
+dependencies = [
+  "numpy>=1.23",
+  "scipy>=1.8",
+  "scikit-learn>=1.1",
+  "pandas>=1.4",
+  "matplotlib >= 3.10"
+]
+
+[project.urls]
+Repository = "https://github.com/samueleserri/NMF"

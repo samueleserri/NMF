@@ -1,0 +1,61 @@
+# Byte-compiled / cache
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Distribution / packaging
+build/
+dist/
+*.egg-info/
+*.egg
+*.egg-link
+pip-wheel-metadata/
+*.whl
+wheelhouse/
+
+# Virtual environments
+env/
+venv/
+.venv/
+venv*/
+ENV/
+.env
+.env.*
+
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Test / coverage / type-checker
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+nosetests.xml
+coverage.xml
+.mypy_cache/
+.pyre/
+.pytype/
+
+# Jupyter notebooks
+.ipynb_checkpoints
+# If you want to ignore generated notebook outputs, uncomment:
+# .ipynb_checkpoints/
+# *.nbconvert.ipynb
+
+# IDE/editor settings
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Logs / temporary files
+*.log
+tmp/
+temp/
+.cache/
