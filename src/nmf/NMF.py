@@ -1,7 +1,7 @@
 import numpy as np
 import time
 import matplotlib.pyplot as plt
-from NonNegMatrix import NonNegMatrix
+from nmf.NonNegMatrix import NonNegMatrix
 
 
 class NMF:

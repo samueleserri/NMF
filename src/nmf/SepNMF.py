@@ -1,8 +1,8 @@
 import numpy as np
 import time
 
-from NonNegMatrix import NonNegMatrix
-from NMF import NMF
+from nmf.NonNegMatrix import NonNegMatrix
+from nmf.NMF import NMF
 
 class SepNMF(NMF):
     """

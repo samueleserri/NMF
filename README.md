@@ -13,9 +13,9 @@ This repository contains the implementation, experiments and results of my bache
 
 ## Requirements
 - Python 3.8+
-- Common libraries: numpy, scipy, scikit-learn, matplotlib, 
+- numpy, scipy, scikit-learn, matplotlib, pandas
 jupyter
-Install with:
+Install in your environment with:
 ````bash
-# Install common dependencies
-python3 -m pip install -r requirements.txt
+# Run this command to install the package in editable mode
+python3 -m pip install -e .
