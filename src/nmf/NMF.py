@@ -155,8 +155,8 @@ class NMF:
         start_time = time.perf_counter()
         match solver:
             case "MU":
-                self.W = np.random.rand(self.m, self.rank) # set W and H to random matrices if using MU
-                self.H = np.random.rand(self.rank, self.n)
+                self.W = np.abs(np.random.normal(size=(self.m, self.rank))) # set W and H to random matrices if using MU
+                self.H = np.abs(np.random.normal(size=(self.rank, self.n)))
                 self.__mu_update__()
             case "HALS":
                 self.__HALS_update__()

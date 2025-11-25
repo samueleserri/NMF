@@ -50,8 +50,8 @@ class SepNMF(NMF):
         start_time = time.perf_counter()
         match solver:
             case "MU":
-                self.W = np.random.rand(self.m, self.rank) # set W and H to random matrices if using MU
-                self.H = np.random.rand(self.rank, self.n)
+                self.W = np.abs(np.random.normal(self.m, self.rank)) # set W and H to random matrices if using MU
+                self.H = np.abs(np.random.normal(self.rank, self.n))
                 super().__mu_update__()
             case "HALS":
                 super().__HALS_update__()
@@ -64,7 +64,6 @@ class SepNMF(NMF):
         self.n_iter = max(0, len(self.errors) - 1)
         self.time_per_iter = self.fit_time/self.n_iter if self.n_iter > 0 else float('inf')
         print(f"Fit completed in {self.fit_time:.4f} s, iterations: {self.n_iter}, avg time/iter: {self.time_per_iter:.4e} s")
-        self.components_ = self.H
 
 
 
@@ -73,6 +72,7 @@ class SepNMF(NMF):
         
         K = []
         R = self.V
+        super().__compute_error__()
         for i in range(self.rank):
             # j_star = argmax_j ||R[:, j]||_2^2
             j_star = np.argmax(np.sum(R**2, axis=0))
@@ -84,4 +84,5 @@ class SepNMF(NMF):
             self.H = H
             # R = V - V[:, K] H
             R = self.V - V_K @ H
+            self.errors.append(np.linalg.norm(R))
         self.W = self.V[:, K]
