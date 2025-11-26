@@ -11,7 +11,7 @@ def display(V, perrow, Li, Co, bw=0, show=True, column_order=True):
     bw : if 0 (default) display high intensities as black (MATLAB behaviour),
          if 1 display high intensities as white
     show : if True, show the figure with matplotlib
-    Returns the assembled display image Vaff (float values in [0,1]).
+    Returns the assembled display image Ass (float values in [0,1]).
 
     # credits: I have adapted the function found in N.Gillis repository of his book to display images in a CBCL-like dataset:
     #  https://gitlab.com/ngillis/nmfbook
@@ -31,7 +31,7 @@ def display(V, perrow, Li, Co, bw=0, show=True, column_order=True):
     grid_w = perrow * Co + (perrow - 1) * sep
 
     # initialize with ones (background)
-    Vaff = np.ones((grid_h, grid_w), dtype=float)
+    Ass = np.ones((grid_h, grid_w), dtype=float)
 
     idx = 0
     for row in range(n_rows):
@@ -44,16 +44,16 @@ def display(V, perrow, Li, Co, bw=0, show=True, column_order=True):
                 patch = V[:, idx].reshape((Li, Co), order='F')
             else:
                 patch = V[:, idx].reshape((Li, Co))
-            Vaff[top:top+Li, left:left+Co] = patch
+            Ass[top:top+Li, left:left+Co] = patch
             idx += 1
     if show:
         plt.figure(figsize=(8, 8))
         if bw == 1:
-            plt.imshow(Vaff, cmap='gray', vmin=0, vmax=1, aspect='equal')
+            plt.imshow(Ass, cmap='gray', vmin=0, vmax=1, aspect='equal')
         else:
-            plt.imshow(1.0 - Vaff, cmap='gray', vmin=0, vmax=1, aspect='equal')
+            plt.imshow(1.0 - Ass, cmap='gray', vmin=0, vmax=1, aspect='equal')
         plt.axis('off')
         plt.tight_layout()
         plt.show()
 
-    return Vaff
+    return Ass

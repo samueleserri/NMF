@@ -1,3 +1,4 @@
+import numpy as np
 import pandas as pd
 
 from nmf import NonNegMatrix, NMF
@@ -13,20 +14,54 @@ TODO: reconstruction and sparsity measures.
 """
 
 def load_dataset() -> NonNegMatrix:
+    """
+    Load the CBCL face dataset from csv file and return it as NonNegMatrix
+    return: NonNegMatrix of shape (2429, 361)
+    2429 = 19 x 19 pixels
+    361 = number of images
+    -------------------
+    dataset path: data/CBCL.csv
+    -------------------
+    """
     return  NonNegMatrix(pd.read_csv("data/CBCL.csv", header=None).to_numpy())
 
 
 def fit_model(rank:int, show: bool = False, solver: str = "MU") -> NMF:
+    """
+    param rank: factorization rank
+    param show: shows the original images before fitting the model if true
+    param solver: NMF solver to use (in the original paper MU is used)
+    return: fitted NMF model
+    """ 
     V = load_dataset()
     sparsity = measure_sparsity(V)
     print(f"sparsity of the data matrix: {sparsity}")
     model = NMF(V, rank)
     model.fit(solver)
-    if show: # show original images if set to True
+    if show: # original images displayed if True
         display(V[:, :rank], perrow=7, Li=19, Co=19, bw=0, show=True)
     return model
 
     
+def reconstuct_face(idx:int ,model: NMF) -> NonNegMatrix:
+    """
+    param idx: index of the face to reconstruct (0 <= idx < n)
+    param model: fitted NMF model
+    return: reconstructed face as NonNegMatrix
+    -------------------
+    V.shape = m x n
+    W.shape = m x r
+    H.shape = r x n
+    # in this case n is the number of faces and m is the dimension of the flattened image (19 x 19 for this dataset)
+    ------------------
+    if V \approx WH then the j-th column of V can be written as V(:,j) = WH(:,j)
+    this is a linear combination of the column of W weighted with the values of the matrix H
+    i.e. V[:,j] = H[1,j]W[:,1] + H[2,j]W[:,2]+...+H[r,j]W[:,r]
+    furthermore note that the number of rows of H is precisely the number of images in V so there is a one-to-one mapping.
+    """
+    return NonNegMatrix(model.W @ model.H[:,idx])
+
+
 
 def run_example() -> None:
     reconstruction_rank = 49
