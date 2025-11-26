@@ -13,7 +13,7 @@ Main Repo for my bachelor thesis on Non-negative matrix factorization.
 - `src/examples/` — contains examples of NMF application on real data.
   - `example_topics_extarction.py`
 - `data/` - all datasets used
-    `CBCL.csv` — face dataset used in https://www.nature.com/articles/44565
+  -`CBCL.csv` — face dataset used in https://www.nature.com/articles/44565
 
 ## Requirements
 - Python 3.8+
@@ -22,7 +22,6 @@ Main Repo for my bachelor thesis on Non-negative matrix factorization.
 - scikit-learn
 - matplotlib
 - pandas
-- pillow (PIL)
  
 Install editable from source with pip (uses pyproject.toml):
 
