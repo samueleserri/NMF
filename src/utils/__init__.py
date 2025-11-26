@@ -1,2 +1,3 @@
 from .Data_Gen import Data_Gen
-from .affichage import affichage
+from .display import display
+from .measure_sparsity import measure_sparsity

@@ -2,7 +2,7 @@ import math
 import numpy as np
 import matplotlib.pyplot as plt
 
-def affichage(V, perrow, Li, Co, bw=0, show=True):
+def display(V, perrow, Li, Co, bw=0, show=True, column_order=True):
     """
     Display columns of V as Li x Co images arranged in a grid with `perrow` images per row.
     V : (m x r) numpy array where m == Li*Co
@@ -40,7 +40,10 @@ def affichage(V, perrow, Li, Co, bw=0, show=True):
                 break
             top = row * (Li + sep)
             left = col * (Co + sep)
-            patch = V[:, idx].reshape((Li, Co), order='F')
+            if column_order:
+                patch = V[:, idx].reshape((Li, Co), order='F')
+            else:
+                patch = V[:, idx].reshape((Li, Co))
             Vaff[top:top+Li, left:left+Co] = patch
             idx += 1
     if show:

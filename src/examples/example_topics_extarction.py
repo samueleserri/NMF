@@ -1,5 +1,4 @@
 from time import time
-from xml.parsers.expat import model
 import matplotlib.pyplot as plt
 from sklearn.datasets import fetch_20newsgroups
 from sklearn.feature_extraction.text import CountVectorizer, TfidfVectorizer
@@ -120,7 +119,9 @@ def load_dataset(n_samples: int, n_features: int):
     # reference: https://scikit-learn.org/stable/modules/generated/sklearn.feature_extraction.text.TfidfVectorizer.html
     tfidf = tfidf_vectorizer.fit_transform(data_samples)
     print("done in %0.3fs." % (time() - t0))
-
+    m, n = tfidf.get_shape()
+    sparsity = 1 - tfidf.getnnz()/float(m * n)
+    print(f"sparsity of the data matrix: {sparsity}")
     return tfidf, tfidf_vectorizer
 
 def fit_model(n_samples: int, n_features: int, n_components: int, n_top_words: int):

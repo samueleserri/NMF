@@ -1,7 +1,7 @@
 import pandas as pd
 
 from nmf import NonNegMatrix, NMF
-from utils import affichage
+from utils import display, measure_sparsity
 
 """
 This file reproduces the results obtained by Daniel D. Lee & H. Sebastian Seung in their paper: https://www.nature.com/articles/44565 .
@@ -18,10 +18,12 @@ def load_dataset() -> NonNegMatrix:
 
 def fit_model(rank:int, show: bool = False, solver: str = "MU") -> NMF:
     V = load_dataset()
+    sparsity = measure_sparsity(V)
+    print(f"sparsity of the data matrix: {sparsity}")
     model = NMF(V, rank)
     model.fit(solver)
     if show: # show original images if set to True
-        affichage(V[:, :rank], perrow=7, Li=19, Co=19, bw=0, show=True)
+        display(V[:, :rank], perrow=7, Li=19, Co=19, bw=0, show=True)
     return model
 
     
@@ -29,8 +31,9 @@ def fit_model(rank:int, show: bool = False, solver: str = "MU") -> NMF:
 def run_example() -> None:
     reconstruction_rank = 49
     fitted_model = fit_model(reconstruction_rank)
-    affichage(fitted_model.W[:,:reconstruction_rank], perrow=7,Li=19, Co=19, bw=0, show=True)
+    display(fitted_model.W[:,:reconstruction_rank], perrow=7,Li=19, Co=19, bw=0, show=True)
     print(f"reconstruction error: {fitted_model.get_final_error()}")
+    print(f"sparsity of W:{measure_sparsity(fitted_model.W)}")
 
 
 
