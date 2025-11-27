@@ -10,7 +10,7 @@ The dataset CBCL consists in a 2429 x 361 pixels where each column represent a 1
 The NMF model with MU algorithm is applied with a factorization rank r = 49. After the fitting two matrices W of size (2429 x 49) and H of size (49 x 361) are obtained.
 Due to the non-negative constraints of the NMF model the matrix W can still be interpreted in the same way as the original matrix, each column of the W can be reshaped
 to a 19 x 19 matrix and displayed. The main result of Lee & Seung is that NMF is able to learn a representation of faces by "parts".
-TODO: reconstruction and sparsity measures.
+TODO: weights visualization.
 """
 
 def load_dataset() -> NonNegMatrix:
@@ -43,7 +43,7 @@ def fit_model(rank:int, show: bool = False, solver: str = "MU") -> NMF:
     return model
 
     
-def reconstuct_face(idx:int ,model: NMF) -> NonNegMatrix:
+def reconstruct_face(idx:int ,model: NMF) -> NonNegMatrix:
     """
     param idx: index of the face to reconstruct (0 <= idx < n)
     param model: fitted NMF model
@@ -57,9 +57,12 @@ def reconstuct_face(idx:int ,model: NMF) -> NonNegMatrix:
     if V \approx WH then the j-th column of V can be written as V(:,j) = WH(:,j)
     this is a linear combination of the column of W weighted with the values of the matrix H
     i.e. V[:,j] = H[1,j]W[:,1] + H[2,j]W[:,2]+...+H[r,j]W[:,r]
-    furthermore note that the number of rows of H is precisely the number of images in V so there is a one-to-one mapping.
+    furthermore note that the number of columns of H is precisely the number of images in V so there is a one-to-one mapping between them. 
     """
-    return NonNegMatrix(model.W @ model.H[:,idx])
+    reconstructed = model.W @ model.H[:,idx]
+    V = load_dataset()
+    print(f"Error in reconstructing face {idx}: {np.linalg.norm(V[:,idx]-reconstructed)/np.linalg.norm(V[:,idx])}")
+    return NonNegMatrix(reconstructed)
 
 
 
@@ -69,6 +72,7 @@ def run_example() -> None:
     display(fitted_model.W[:,:reconstruction_rank], perrow=7,Li=19, Co=19, bw=0, show=True)
     print(f"reconstruction error: {fitted_model.get_final_error()}")
     print(f"sparsity of W:{measure_sparsity(fitted_model.W)}")
+    # reconstruct_face(2, fitted_model)
 
 
 
