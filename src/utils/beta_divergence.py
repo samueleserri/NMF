@@ -1,7 +1,7 @@
 import numpy  as np
 
 """
-    This file contains the implementation of the beta loss and the relative loss used in Multiplicative Updates for β-NMF
+    This file contains the implementation of the beta divergence and the relative loss used in Multiplicative Updates for β-NMF
     -----------------------
     The beta loss is D_\beta(V, WH, beta) = sum_{i,j} d_\beta(V[i,j], WH[i,j])
     where d_\beta is the beta divergence
@@ -15,8 +15,6 @@ import numpy  as np
 
 def beta_divergence(x, y, beta: float):
     """
-    Element-wise beta-divergence. Works with scalars or numpy arrays.
-    Uses safe operations (small eps for denominators) and the standard formula:
       - beta == 0: d(x,y) = x/y - log(x/y) - 1   (Itakura-Saito)
       - beta == 1: d(x,y) = x * log(x/y) - x + y (KL)
       - otherwise: d(x,y) = (x^beta + (beta-1) y^beta - beta x y^{beta-1}) / (beta (beta-1))
