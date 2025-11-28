@@ -1,6 +1,6 @@
 import numpy as np
 import pandas as pd
-
+import matplotlib.pyplot as plt
 from nmf import NonNegMatrix, NMF
 from utils import display, measure_sparsity
 
@@ -33,13 +33,14 @@ def fit_model(rank:int, show: bool = False, solver: str = "MU") -> NMF:
     param solver: NMF solver to use (in the original paper MU is used)
     return: fitted NMF model
     """ 
-    V = load_dataset()
-    sparsity = measure_sparsity(V)
-    print(f"sparsity of the data matrix: {sparsity}")
-    model = NMF(V, rank)
-    model.fit(solver)
+    V = load_dataset()    
     if show: # original images displayed if True
         display(V[:, :rank], perrow=7, Li=19, Co=19, bw=0, show=True)
+    sparsity = measure_sparsity(V)
+    print(f"sparsity of the data matrix: {sparsity}")
+    # instantiate and fit model
+    model = NMF(V, rank)
+    model.fit(solver)
     return model
 
     
@@ -66,12 +67,21 @@ def reconstruct_face(idx:int ,model: NMF) -> NonNegMatrix:
 
 
 
-def run_example() -> None:
+def run_example(show: bool = False) -> None:
     reconstruction_rank = 49
     fitted_model = fit_model(reconstruction_rank)
-    display(fitted_model.W[:,:reconstruction_rank], perrow=7,Li=19, Co=19, bw=0, show=True)
+    if show:
+        display(fitted_model.W[:,:reconstruction_rank], perrow=7,Li=19, Co=19, bw=0, show=True)
     print(f"reconstruction error: {fitted_model.get_final_error()}")
     print(f"sparsity of W:{measure_sparsity(fitted_model.W)}")
+    # heat map of the weights in H
+    # plt.imshow(fitted_model.H[:,0], aspect='auto', cmap='grey')
+    # plt.colorbar()
+    # plt.title("Heatmap of the weights in H")
+    # plt.xlabel("Images")
+    # plt.ylabel("Components")
+    # plt.show()
+    
     # reconstruct_face(2, fitted_model)
 
 
