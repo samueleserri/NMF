@@ -26,7 +26,7 @@ def load_dataset() -> NonNegMatrix:
     return  NonNegMatrix(pd.read_csv("data/CBCL.csv", header=None).to_numpy())
 
 
-def fit_model(rank:int, show: bool = False, solver: str = "MU") -> NMF:
+def fit_model(rank:int, show: bool = False, solver: str = "beta_MU", beta: float = 1) -> NMF:
     """
     param rank: factorization rank
     param show: shows the original images before fitting the model if true
@@ -40,7 +40,7 @@ def fit_model(rank:int, show: bool = False, solver: str = "MU") -> NMF:
     print(f"sparsity of the data matrix: {sparsity}")
     # instantiate and fit model
     model = NMF(V, rank)
-    model.fit(solver)
+    model.fit(solver, beta)
     return model
 
     
@@ -87,4 +87,4 @@ def run_example(show: bool = False) -> None:
 
 
 if __name__ == "__main__":
-    run_example()
+    run_example(True)
