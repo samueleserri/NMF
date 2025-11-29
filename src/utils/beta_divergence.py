@@ -36,7 +36,7 @@ def beta_divergence(x, y, beta: float):
 
 def beta_loss(X: np.ndarray, Y: np.ndarray, beta: float) -> float:
     """
-    Sum of element-wise beta-divergence between X and Y (vectorized).
+    Sum of element-wise beta-divergence between X and Y.
     """
     return float(np.sum(beta_divergence(X, Y, beta)))
 

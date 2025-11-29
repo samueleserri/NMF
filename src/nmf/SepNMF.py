@@ -34,8 +34,8 @@ class SepNMF(NMF):
       for separable nonnegative matrix factorization. IEEE TPAMI.
     """
 
-    def __init__(self, V: NonNegMatrix, rank: int, max_iter: int = 1000, tol: float = 0.0001, T: int = 10):
-        super().__init__(V, rank, max_iter, tol, T)
+    def __init__(self, V: NonNegMatrix, rank: int, max_iter: int = 1000, tol: float = 0.0001, T: int = 10, normalize: bool = False):
+        super().__init__(V, rank, max_iter, tol, T, normalize)
     
     def fit(self, solver: str) -> None:
         """
@@ -49,14 +49,8 @@ class SepNMF(NMF):
         print(f"Fitting with {solver} algorithm")
         start_time = time.perf_counter()
         match solver:
-            case "MU":
-                self.W = np.abs(np.random.normal(self.m, self.rank)) # set W and H to random matrices if using MU
-                self.H = np.abs(np.random.normal(self.rank, self.n))
-                super().__mu_update__()
-            case "HALS":
-                super().__HALS_update__()
             case "SNPA":
-                self.__SNPA_update__()
+                self.__SNPA_update()
             case _:
                 raise ValueError("Solver not found")
         end_time = time.perf_counter()
@@ -68,11 +62,11 @@ class SepNMF(NMF):
 
 
 
-    def __SNPA_update__(self) -> None:
+    def __SNPA_update(self) -> None:
         
         K = []
         R = self.V
-        super().__compute_error__()
+        # super().__compute_Fro_error()
         for i in range(self.rank):
             # j_star = argmax_j ||R[:, j]||_2^2
             j_star = np.argmax(np.sum(R**2, axis=0))
