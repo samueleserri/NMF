@@ -10,9 +10,11 @@ class NMF:
     Non-negative Matrix Factorization (NMF).
     Description
     -----------
-    This class implements a basic NMF solver with two update strategies:
+    This class implements a basic NMF solver with the following update strategies:
     - Multiplicative Updates (MU)
+    - beta Multiplicative Updates (beta_MU)
     - Hierarchical Alternating Least Squares (HALS)
+    - Alternating Least Squares (ALS)
     Given a non-negative input matrix V (m x n) and a target factorization rank r,
     the model approximates V ≈ W @ H with W (m x r) and H (r x n), both constrained
     to be non-negative.
@@ -30,6 +32,7 @@ class NMF:
     T : int, optional (default=10)
         Lag used in the stopping criterion: compare the current error with the
         error T iterations before.
+    column_stochastic: bool, if True the input model is normalized s.t. 1^T V = 1
     Attributes
     ----------
     V : NonNegMatrix
@@ -52,7 +55,7 @@ class NMF:
         Right factor matrix of shape (rank, n).
     errors : list[float]
         History of relative reconstruction errors:
-            e(t) = ||V - W @ H||_F / ||V||_F
+            e(t) = ||V - WH|| / ||V||
     V_norm : float
         Frobenius norm of the input matrix V used to normalize errors.
     Public Methods
@@ -80,30 +83,34 @@ class NMF:
     Hierarchical Alternating Least Squares (HALS)
         HALS updates each column/row of W and H in turn using closed-form updates
         that enforce non-negativity by taking a maximum with zero.
-        The implementation computes intermediate quantities (e.g. V @ H.T, H @ H.T,
+    Alternating least squares (ALS)
+        ALS updates W and H by performing a gradient descent step followed by a
+        projection onto the non-negative orthant.
+    Beta-divergence Multiplicative Updates (beta_MU)
+        The beta_MU implementation follows the update rules for minimizing the
+        beta-loss between V and WH.
+        see: arXiv:1010.1763 for the details: # * https://arxiv.org/abs/1010.1763 * #
     Stopping criterion
     ------------------
     After each iteration the relative error e(t) is appended to self.errors. The
     algorithm stops early if
         |e(t - T) - e(t)| <= tol * e(t)
     for t >= T. Otherwise the process continues up to max_iter iterations.
-    
     Notes
     -----------------
-    In the constructor the matrices W,H are initialized as the identity matrix W = I^{m x r}, H = I^{r x n},
-    This initialization does not work for the MU solver so in the fit method if "MU" is solved W,H are set to be random (np.random.rand) samples from a Uniform([0,1])
-    I have noticed that the random initialization work poorly with HALS when fitting a grey scale image.
+    In the constructor the matrices W,H are initialized randomly with a uniform distribution in [0,1],
+    This initialization does not work for the HALS solver so in the fit method if HALS is used they are initialized as the identity matrix.
+    I have noticed that the random initialization work poorly with HALS and observed empirically that initialization  with identity works well.
     -----------------
     Example
     -----------------
     Basic usage:
         model = NMF(V, rank=10, max_iter=500, tol=1e-5, T=5)
         model.fit(solver="HALS")
-        W, H = model.get_factors()
         V_approx = model.reconstruct()
     """
 
-    def __init__(self, V: NonNegMatrix, rank: int, max_iter: int = 1000, tol: float = 1e-4, T: int = 10, normalize : bool = True):
+    def __init__(self, V: NonNegMatrix, rank: int, max_iter: int = 1000, tol: float = 1e-4, T: int = 10, column_stochastic : bool = True):
         """
         Initialize the NMF model with the input matrix and parameters.
         Parameters
@@ -120,8 +127,10 @@ class NMF:
         T : int, optional (default=10)
             Lag used in the stopping criterion: compare the current error with the
             error T iterations before.  
+        column_stochastic: bool, (default = True)
+                           Normalize the input data matrix X s.t. 1^T V = 1 i.e. each column sum to 1. This property is called column stochasticicty 
         """
-        self.V = V / (V.sum(axis=0, keepdims=True) + 1e-10) if normalize else V
+        self.V = V / (V.sum(axis=0, keepdims=True) + 1e-10) if column_stochastic else V
         self.rank = rank
         self.max_iter = max_iter
         self.tol = tol
