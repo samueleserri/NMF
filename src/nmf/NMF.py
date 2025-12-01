@@ -205,7 +205,7 @@ class NMF:
         plt.plot(range(len(self.errors)), self.errors, '-o', markersize=3)
         plt.yscale('log')
         plt.xlabel("Iteration")
-        plt.ylabel("Frobenius norm ||V - W H||_F/||V||_F (log scale)")
+        plt.ylabel("Relative error (log scale)")
         plt.title("NMF reconstruction error")
         plt.grid(True, which="both", ls="--")
         plt.tight_layout()

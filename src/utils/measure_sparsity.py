@@ -1,6 +1,6 @@
 import numpy as np
 
-def measure_sparsity(X: np.ndarray, tol: float = 1e-5) -> float:
+def measure_sparsity(X: np.ndarray, tol: float = 1e-10) -> float:
     """
     Measure sparsity treating values with absolute magnitude <= tol as zero.
 

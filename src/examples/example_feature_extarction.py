@@ -69,11 +69,12 @@ def reconstruct_face(idx:int ,model: NMF) -> NonNegMatrix:
 
 def run_example(show: bool = False) -> None:
     reconstruction_rank = 49
-    fitted_model = fit_model(reconstruction_rank)
+    fitted_model = fit_model(reconstruction_rank, solver="beta_MU")
     if show:
         display(fitted_model.W[:,:reconstruction_rank], perrow=7,Li=19, Co=19, bw=0, show=True)
     print(f"reconstruction error: {fitted_model.get_final_error()}")
     print(f"sparsity of W:{measure_sparsity(fitted_model.W)}")
+    print(f"sparsity of H:{measure_sparsity(fitted_model.H)}")
     # heat map of the weights in H
     # plt.imshow(fitted_model.H[:,0], aspect='auto', cmap='grey')
     # plt.colorbar()
