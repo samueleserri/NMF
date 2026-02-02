@@ -2,8 +2,9 @@ from time import time
 import matplotlib.pyplot as plt
 from sklearn.datasets import fetch_20newsgroups
 from sklearn.feature_extraction.text import CountVectorizer, TfidfVectorizer
-
-from nmf import NonNegMatrix, NMF
+from scipy import sparse
+import numpy as np
+from nmf import NonNegMatrix, NMF, SparseNMF
 
 
 """
@@ -40,7 +41,7 @@ def plot_top_words(model, feature_names, n_top_words, title):
 
     Parameters
     ----------
-    model : SepNMF
+    model : SparseNMF
         Fitted separable NMF model exposing H (topic vectors) and/or W.
     feature_names : array-like of str
         Mapping from feature indices to words (from vectorizer).
@@ -143,10 +144,9 @@ def fit_model(n_samples: int, n_features: int, n_components: int, n_top_words: i
     """
     
     tfidf, tfidf_vectorizer = load_dataset(n_samples, n_features)
-    V = NonNegMatrix(tfidf.toarray()) # type: ignore
-    model = NMF(V, n_components)
+    model = SparseNMF(tfidf, n_components) # type: ignore
 
-    model.fit(solver="ALS")
+    model.fit(solver="PGD")
 
     tfidf_feature_names = tfidf_vectorizer.get_feature_names_out()
     plot_top_words(model, tfidf_feature_names, n_top_words, "NMF topics with ALS solver and Frobenius norm")

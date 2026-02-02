@@ -212,7 +212,12 @@ class NMF:
             case "beta_MU":
                 if beta is None:
                     raise ValueError("provide a value for beta")
-                self.__beta_update(beta)
+                if beta < 0:
+                    raise ValueError("beta must be non-negative")
+                if beta == 2:
+                    self.__mu_update()
+                else:
+                    self.__beta_update(beta)
             case _:
                 raise ValueError(f"Solver {solver} not found")
         end_time = time.perf_counter()
@@ -288,7 +293,7 @@ class NMF:
         print(f"value of beta: {beta}")
         self.V_beta_div = beta_loss(self.V, np.mean(self.V)*np.ones(self.V.shape), beta)
         self.errors.append(beta_loss(self.V, self.W @ self.H, beta)/ (self.V_beta_div + 1e-10))
-        # TODO: try min(V, eps) look up MU zero locking problem
+        eps = 1e-10
         for t in range(self.max_iter):
             WH = np.maximum(self.W @ self.H, 0)
             # element-wise powers
@@ -298,7 +303,7 @@ class NMF:
             W_num = (np.multiply(WH_beta_m2, self.V)) @ self.H.T
             W_den = (WH_beta_m1) @ self.H.T
             W_new = np.multiply(self.W, W_num / W_den + 1e-10)
-            W_new = np.maximum(W_new, 0) 
+            W_new = np.maximum(W_new, eps) 
             self.W = NonNegMatrix(W_new) # update W
 
             # recompute WH after W update
@@ -310,7 +315,7 @@ class NMF:
             H_num = self.W.T @ (WH_beta_m2 * self.V)
             H_den = self.W.T @ (WH_beta_m1)
             H_new = np.multiply(self.H, H_num / H_den + 1e-10)
-            H_new = np.maximum(H_new, 0)
+            H_new = np.maximum(H_new, eps)
             self.H = NonNegMatrix(H_new) # update H
 
             # error at step t (beta-divergence)
