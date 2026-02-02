@@ -3,13 +3,13 @@ import matplotlib.pyplot as plt
 from sklearn.datasets import fetch_20newsgroups
 from sklearn.feature_extraction.text import CountVectorizer, TfidfVectorizer
 
-from nmf import NonNegMatrix, SepNMF
+from nmf import NonNegMatrix, NMF
 
 
 """
 This code is a modified version of the example in the scikit-learn NMF documentation. 
 The purpose of this file is to show the simplest example of application of NMF in topic modeling.
-Instead of using NMF from scikit-learn my implementation is used. Particularly the separability assumption is made and the SNPA solver is used.
+Instead of using NMF from scikit-learn my implementation is used. Particularly the separability assumption is made and the ALS solver is used.
 -------------
 Reference:
 https://scikit-learn.org/stable/auto_examples/applications/plot_topics_extraction_with_nmf_lda.html#sphx-glr-auto-examples-applications-plot-topics-extraction-with-nmf-lda-py
@@ -133,7 +133,7 @@ def fit_model(n_samples: int, n_features: int, n_components: int, n_top_words: i
     1. Load TF–IDF features with load_dataset.
     2. Convert TF–IDF sparse matrix to a dense non-negative matrix for SepNMF.
        (bear in mind memory usage; for large corpora use chunking or a sparse-aware algorithm)
-    3. Instantiate SepNMF and fit using SNPA solver.
+    3. Instantiate SepNMF and fit using ALS solver.
     4. Plot top words per discovered topic.
 
     Parameters
@@ -144,12 +144,12 @@ def fit_model(n_samples: int, n_features: int, n_components: int, n_top_words: i
     
     tfidf, tfidf_vectorizer = load_dataset(n_samples, n_features)
     V = NonNegMatrix(tfidf.toarray()) # type: ignore
-    model = SepNMF(V, n_components)
+    model = NMF(V, n_components)
 
-    model.fit(solver="SNPA")
+    model.fit(solver="ALS")
 
     tfidf_feature_names = tfidf_vectorizer.get_feature_names_out()
-    plot_top_words(model, tfidf_feature_names, n_top_words, "NMF topics with SNPA solver and Frobenius norm")
+    plot_top_words(model, tfidf_feature_names, n_top_words, "NMF topics with ALS solver and Frobenius norm")
 
 
 def run_example():

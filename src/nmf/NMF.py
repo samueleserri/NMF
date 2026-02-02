@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 from typing import Optional
 from nmf.NonNegMatrix import NonNegMatrix
 from utils.beta_divergence import beta_loss
+from sklearn.decomposition import TruncatedSVD
 
 class NMF:
     """"
@@ -33,6 +34,16 @@ class NMF:
         Lag used in the stopping criterion: compare the current error with the
         error T iterations before.
     column_stochastic: bool, if True the input model is normalized s.t. 1^T V = 1
+
+    init: str, (default = "random")
+            Initialization method for factor matrices W and H. Supported values:
+            - "random": Random initialization with uniform distribution.
+            - "nndsvd": Non-negative Double Singular Value Decomposition initialization.
+            - "custom": User will set W and H manually.
+    W0: Optional[np.ndarray], (default = None)
+         Initial matrix for W if init = "custom"
+    H0: Optional[np.ndarray], (default = None)
+         Initial matrix for H if init = "custom"
     Attributes
     ----------
     V : NonNegMatrix
@@ -84,7 +95,9 @@ class NMF:
         HALS updates each column/row of W and H in turn using closed-form updates
         that enforce non-negativity by taking a maximum with zero.
     Alternating least squares (ALS)
-        ALS updates W and H by performing a gradient descent step followed by a
+        ALS solves for W and H alternately using least squares and then projecting the solutions.
+    Projected Gradient Descent (PGD)
+        PGD updates W and H by performing a gradient descent step followed by a
         projection onto the non-negative orthant.
     Beta-divergence Multiplicative Updates (beta_MU)
         The beta_MU implementation follows the update rules for minimizing the
@@ -96,11 +109,6 @@ class NMF:
     algorithm stops early if
         |e(t - T) - e(t)| <= tol * e(t)
     for t >= T. Otherwise the process continues up to max_iter iterations.
-    Notes
-    -----------------
-    In the constructor the matrices W,H are initialized randomly with a uniform distribution in [0,1],
-    This initialization does not work for the HALS solver so in the fit method if HALS is used they are initialized as the identity matrix.
-    I have noticed that the random initialization work poorly with HALS and observed empirically that initialization  with identity works well.
     -----------------
     Example
     -----------------
@@ -110,7 +118,7 @@ class NMF:
         V_approx = model.reconstruct()
     """
 
-    def __init__(self, V: NonNegMatrix, rank: int, max_iter: int = 1000, tol: float = 1e-4, T: int = 10, column_stochastic : bool = True):
+    def __init__(self, V: np.ndarray, rank: int, max_iter: int = 1000, tol: float = 1e-4, T: int = 10, column_stochastic : bool = False, init: str = "random", W0: Optional[np.ndarray] = None, H0: Optional[np.ndarray] = None) -> None:
         """
         Initialize the NMF model with the input matrix and parameters.
         Parameters
@@ -129,17 +137,40 @@ class NMF:
             error T iterations before.  
         column_stochastic: bool, (default = True)
                            Normalize the input data matrix X s.t. 1^T V = 1 i.e. each column sum to 1. This property is called column stochasticicty 
+        init: str, (default = "random")
+              Initialization method for factor matrices W and H. Supported values:
+              - "random": Random initialization with uniform distribution.
+              - "nndsvd": Non-negative Double Singular Value Decomposition initialization.
+              - "custom": User will set W and H manually.
         """
-        self.V = V / (V.sum(axis=0, keepdims=True) + 1e-10) if column_stochastic else V
+        try:
+            self.V = NonNegMatrix(V / (V.sum(axis=0, keepdims=True) + 1e-10)) if column_stochastic else NonNegMatrix(V)
+        except ValueError as e:
+            raise ValueError("Input matrix V must be non-negative.") from e
         self.rank = rank
         self.max_iter = max_iter
         self.tol = tol
         self.T = T
         self.m, self.n = V.shape
-        self.W = NonNegMatrix(np.random.rand(self.m, self.rank))
-        self.H = NonNegMatrix(np.random.rand(self.rank, self.n))
         self.errors = []
         self.V_norm = np.linalg.norm(V, "fro")
+        match init:
+            case "random":
+                self.W = NonNegMatrix(np.random.rand(self.m, self.rank))
+                self.H = NonNegMatrix(np.random.rand(self.rank, self.n))
+            case "nndsvd":
+                self.__NNSVD_init()
+            case "custom":
+                if W0 is None or H0 is None:
+                    raise ValueError("Please provide both W0 and H0 for custom initialization.")
+                if W0.shape != (self.m, self.rank):
+                    raise ValueError(f"W0 must have shape ({self.m}, {self.rank}).")
+                if H0.shape != (self.rank, self.n):
+                    raise ValueError(f"H0 must have shape ({self.rank}, {self.n}).")
+                self.W = NonNegMatrix(W0)
+                self.H = NonNegMatrix(H0)
+            case _:
+                raise ValueError(f"Initialization method {init} not recognized.")
     
     def fit(self, solver: str, beta: Optional[float] = None):
         """
@@ -152,6 +183,7 @@ class NMF:
             - "ALS" : Alternating Least Squares
             - "MU"   : Multiplicative Updates
             - "beta_MU" : beta-divergence multiplicative updates (requires beta parameter)
+            - "PGD" : Projected Gradient Descent
         beta: float, optional 
             required if the solver is beta_MU
         Returns
@@ -172,11 +204,11 @@ class NMF:
             case "MU":
                 self.__mu_update()
             case "HALS":
-                self.W = NonNegMatrix( np.eye(self.m, self.rank))
-                self.H = NonNegMatrix(np.eye(self.rank, self.n))
                 self.__HALS_update()
             case "ALS":
-                self.___ALS_update()
+                self.__ALS_update()
+            case "PGD":
+                self.__PGD_update()
             case "beta_MU":
                 if beta is None:
                     raise ValueError("provide a value for beta")
@@ -235,11 +267,11 @@ class NMF:
             # first block
             W_num = self.V @ self.H.T
             W_den = self.W @ (self.H @ self.H.T)
-            self.W = np.multiply(self.W, W_num / (W_den + 1e-10)) # update W
+            self.W = NonNegMatrix(np.multiply(self.W, W_num / (W_den + 1e-10))) # update W
             # second block
             H_num = self.W.T @ self.V
             H_den = (self.W.T @ self.W) @ self.H
-            self.H = np.multiply(self.H, H_num / (H_den + 1e-10)) # update H
+            self.H = NonNegMatrix(np.multiply(self.H, H_num / (H_den + 1e-10))) # update H
             # error at step t
             self.__compute_Fro_error()
             if t >= self.T and np.abs(self.errors[t - self.T] - self.errors[t]) <= self.tol*self.errors[t]:
@@ -264,8 +296,8 @@ class NMF:
             WH_beta_m1 = np.power(WH, beta - 1)
             # block 1
             W_num = (np.multiply(WH_beta_m2, self.V)) @ self.H.T
-            W_den = (WH_beta_m1) @ self.H.T + 1e-10
-            W_new = np.multiply(self.W, W_num / W_den)
+            W_den = (WH_beta_m1) @ self.H.T
+            W_new = np.multiply(self.W, W_num / W_den + 1e-10)
             W_new = np.maximum(W_new, 0) 
             self.W = NonNegMatrix(W_new) # update W
 
@@ -276,8 +308,8 @@ class NMF:
 
             # block 2
             H_num = self.W.T @ (WH_beta_m2 * self.V)
-            H_den = self.W.T @ (WH_beta_m1) + 1e-10
-            H_new = np.multiply(self.H, H_num / H_den)
+            H_den = self.W.T @ (WH_beta_m1)
+            H_new = np.multiply(self.H, H_num / H_den + 1e-10)
             H_new = np.maximum(H_new, 0)
             self.H = NonNegMatrix(H_new) # update H
 
@@ -289,9 +321,41 @@ class NMF:
                 break
 
 
+    
+    def __ALS_update(self) -> None:
+        """
+        Input: V, W(0), H(0)
+        V.size =  (m x n), 
+        W(0).size = (m x r) 
+        H(0).size = (r x n)
+        Output: An NMF solution (W, H) ≥ 0 such that ∥V - WH∥_F is minimized.
+        for i = 1, 2, . . . do
+            W <- max (0, argmin_{W} ||V - WH||_F^2)
+            H <- max (0, argmin_{H} ||V - WH||_F^2)
+        end for
+        """
+        # initial error
+        self.__compute_Fro_error()  # e(0)
 
+        for t in range(self.max_iter):
+            # Solve for W: min_{W >= 0} ||V - WH||_F^2
+            HHT = self.H @ self.H.T
+            VHT = self.V @ self.H.T
+            for i in range(self.m):
+                self.W[i, :] = np.maximum(0, np.linalg.solve(HHT + 1e-10 * np.eye(self.rank), VHT[i, :].T).T)
 
-    def ___ALS_update(self) -> None:
+            # Solve for H: min_{H >= 0} ||V - WH||_F^2
+            WTW = self.W.T @ self.W
+            WTV = self.W.T @ self.V
+            for j in range(self.n):
+                self.H[:, j] = np.maximum(0, np.linalg.solve(WTW + 1e-10 * np.eye(self.rank), WTV[:, j]))
+
+            # error at step t
+            self.__compute_Fro_error()
+            if t >= self.T and np.abs(self.errors[t - self.T] - self.errors[t]) <= self.tol * self.errors[t]:
+                break
+
+    def __PGD_update(self) -> None:
         """
         Input: V, W(0), H(0)
         V.size =  (m x n), 
@@ -313,10 +377,10 @@ class NMF:
             LH = (np.linalg.norm(self.W, 2) ** 2) + 1e-10
             # Gradient w.r.t W: ((W H - V) H^T)
             grad_W = (self.W @ self.H - self.V) @ self.H.T
-            self.W = np.maximum(0, self.W - grad_W / LW)
+            self.W = NonNegMatrix(np.maximum(0, self.W - grad_W / LW))
             # Gradient w.r.t H: (W^T (W H - V))
             grad_H  = self.W.T @ (self.W @ self.H - self.V)
-            self.H = np.maximum(0, self.H - grad_H / LH) #type: ignore
+            self.H = NonNegMatrix(np.maximum(0, self.H - grad_H / LH))
 
             # error at step t
             self.__compute_Fro_error()
@@ -371,7 +435,45 @@ class NMF:
         """
         rel_err = np.linalg.norm(self.V - self.W @ self.H, "fro")/ (self.V_norm +1e-10)
         self.errors.append(rel_err)
-    
+
+
+    def __NNSVD_init(self) -> None:
+        """
+        Non-negative Double Singular Value Decomposition (NNDSVD) initialization.
+        Reference:
+        Boutsidis, C., & Gallopoulos, E. (2008). SVD-based initialization: A head start for
+        nonnegative matrix factorization. Pattern Recognition, 41(4), 1350-1362.
+        --------------
+        """
+        svd = TruncatedSVD(n_components=self.rank)
+        U = svd.fit_transform(self.V) 
+        S = svd.singular_values_ 
+        VT = svd.components_
+        self.W = np.zeros((self.m, self.rank)) # dimensions m x r
+        self.H = np.zeros((self.rank, self.n)) # dimensions r x n
+        self.W[:, 0] = np.sqrt(S[0]) * np.maximum(0, U[:, 0])
+        self.H[0, :] = np.sqrt(S[0]) * np.maximum(0, VT[0, :])
+        for j in range(1, self.rank):
+            u = U[:,j]
+            v = VT[j,:]
+            u_pos = np.maximum(0, u)
+            u_neg = np.maximum(0, -u)
+            v_pos = np.maximum(0, v)
+            v_neg = np.maximum(0, -v)
+            u_pos_norm = np.linalg.norm(u_pos)
+            u_neg_norm = np.linalg.norm(u_neg)
+            v_pos_norm = np.linalg.norm(v_pos)
+            v_neg_norm = np.linalg.norm(v_neg)
+            m_pos = u_pos_norm * v_pos_norm
+            m_neg = u_neg_norm * v_neg_norm
+            if m_pos >= m_neg:
+                self.W[:, j] = np.sqrt(S[j] * m_pos) * (u_pos / (u_pos_norm + 1e-10))
+                self.H[j, :] = np.sqrt(S[j] * m_pos) * (v_pos / (v_pos_norm + 1e-10))
+            else:
+                self.W[:, j] = np.sqrt(S[j] * m_neg) * (u_neg / (u_neg_norm + 1e-10))
+                self.H[j, :] = np.sqrt(S[j] * m_neg) * (v_neg / (v_neg_norm + 1e-10))
+        print("NNDSVD initialization completed.")
+
 
     def get_final_error(self) -> float:
         """
