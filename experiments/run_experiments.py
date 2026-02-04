@@ -40,6 +40,6 @@ if __name__ == "__main__":
     n : int = 50
     r : int = min(m,n)
     distribution : str = "uniform"
-    solver : str = "ALS"
+    solver : str = "MU"
     beta: float = 1
-    run_experiments({"m": m, "n": n, "r": min(m,n), "random_state" : 42}, solver = solver, distr=distribution, beta = beta)
+    run_experiments({"m": m, "n": n, "r": r, "random_state" : 42}, solver = solver, distr=distribution, beta = beta)

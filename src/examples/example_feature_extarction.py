@@ -1,6 +1,5 @@
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
 from nmf import NonNegMatrix, NMF
 from utils import display, measure_sparsity
 

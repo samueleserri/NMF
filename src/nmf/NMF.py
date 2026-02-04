@@ -153,7 +153,7 @@ class NMF:
         self.T = T
         self.m, self.n = V.shape
         self.errors = []
-        self.V_norm = np.linalg.norm(V, "fro")
+        self.V_norm = beta_loss(self.V, np.mean(self.V)*np.ones(self.V.shape), 2)
         match init:
             case "random":
                 self.W = NonNegMatrix(np.random.rand(self.m, self.rank))
@@ -214,10 +214,7 @@ class NMF:
                     raise ValueError("provide a value for beta")
                 if beta < 0:
                     raise ValueError("beta must be non-negative")
-                if beta == 2:
-                    self.__mu_update()
-                else:
-                    self.__beta_update(beta)
+                self.__beta_update(beta)
             case _:
                 raise ValueError(f"Solver {solver} not found")
         end_time = time.perf_counter()
@@ -239,7 +236,9 @@ class NMF:
         """
         # plot (y axis in log scale)
         plt.figure(figsize=(6,4))
-        plt.plot(range(len(self.errors)), self.errors, '-o', markersize=3)
+        plt.scatter(x = range(len(self.errors)), y = self.errors, marker='x', s=50)
+        # connect the dots
+        plt.plot(range(len(self.errors)), self.errors, linestyle='--', alpha=0.7)
         plt.yscale('log')
         plt.xlabel("Iteration")
         plt.ylabel("Relative error (log scale)")
@@ -272,11 +271,11 @@ class NMF:
             # first block
             W_num = self.V @ self.H.T
             W_den = self.W @ (self.H @ self.H.T)
-            self.W = NonNegMatrix(np.multiply(self.W, W_num / (W_den + 1e-10))) # update W
+            self.W = np.multiply(self.W, W_num / (W_den + 1e-10))# update W
             # second block
             H_num = self.W.T @ self.V
             H_den = (self.W.T @ self.W) @ self.H
-            self.H = NonNegMatrix(np.multiply(self.H, H_num / (H_den + 1e-10))) # update H
+            self.H = np.multiply(self.H, H_num / (H_den + 1e-10)) # update H
             # error at step t
             self.__compute_Fro_error()
             if t >= self.T and np.abs(self.errors[t - self.T] - self.errors[t]) <= self.tol*self.errors[t]:
@@ -400,7 +399,7 @@ class NMF:
         formula W[:,k] <- max(0, VH^T[:,k] - sum_{l \not= k}W[:,l](HH^T)[l,k])
                 H[j,:] <- max(0, W^TV[j,:] - sum_{l \not= j}W^TW[k,l](H)[l,:])
         """
-        self.__compute_Fro_error()
+        self.errors.append(np.linalg.norm(self.V - self.W @ self.H, 'fro') / (self.V_norm + 1e-10))  # e(0)
         for t in range(self.max_iter):
             # compute VH^T and HH^T
             VHT = self.V @ self.H.T
@@ -423,7 +422,7 @@ class NMF:
                         sum += WTW[k,l] * self.H[l,:]
                 self.H[k,:] = np.maximum(0, (WTV[k,:] - sum)/(WTW[k,k] + 1e-10)) # update row of H
             # error at step t
-            self.__compute_Fro_error()
+            self.errors.append(np.linalg.norm(self.V - self.W @ self.H, 'fro') / (self.V_norm + 1e-10))
             if t >= self.T and np.abs(self.errors[t - self.T] - self.errors[t]) <= self.tol*self.errors[t]:
                 break            
 
@@ -438,7 +437,8 @@ class NMF:
         Frobenius norm of the input matrix V:
             e(t) = ||V - WH|| / ||V||.
         """
-        rel_err = np.linalg.norm(self.V - self.W @ self.H, "fro")/ (self.V_norm +1e-10)
+        rel_err = beta_loss(self.V, self.W @ self.H, 2)/(self.V_norm + 1e-10)
+        # rel_err = np.linalg.norm(self.V - self.W @ self.H, "fro")/ (self.V_norm +1e-10)
         self.errors.append(rel_err)
 
 

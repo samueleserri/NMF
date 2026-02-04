@@ -1,6 +1,4 @@
 import numpy as np
-import time
-import matplotlib.pyplot as plt
 from typing import Optional
 from scipy import sparse
 from nmf import NMF
@@ -8,22 +6,14 @@ from nmf import NMF
 class SparseNMF(NMF):
 
     def __init__(self, V: sparse.csr_array, r: int, init: Optional[str] = "random",
-                 max_iter: int = 1000, tol: float = 1e-4, T: int  = 10, random_state: Optional[int] = None,
+                 max_iter: int = 1000, tol: float = 1e-4, T: int  = 10, 
                 beta: float = 2, W0: Optional[np.ndarray] = None, H0: Optional[np.ndarray] = None,
                 ):
         """
-        Sparse Non-negative Matrix Factorization (Sparse NMF) with L1 regularization.
-
-        Parameters:
-        - V: Input non-negative data matrix (m x n) as a sparse matrix.
-        - r: Rank for the factorization.
-        - init: Initialization method for W and H ('random' or 'nndsvd').
-        - max_iter: Maximum number of iterations.
-        - tol: Tolerance for the stopping condition.
-        - random_state: Seed for random number generator.
-        - alpha_W: Regularization parameter for W (L1 penalty).
-        - alpha_H: Regularization parameter for H (L1 penalty).
-        - beta: Beta divergence parameter (0, 1, or 2).
+        See NMF class for documentation.
+        This class extends NMF to handle sparse input matrices efficiently; it is compatible with the scipy sparse array interface.
+        It is recommended to use this class whenever the input matrix is sparse.
+        For more details see: https://docs.scipy.org/doc/scipy/reference/sparse.html
         """
         self.V = V 
         if V.min() < 0:
@@ -33,7 +23,6 @@ class SparseNMF(NMF):
         self.init = init
         self.max_iter = max_iter
         self.tol = tol
-        self.random_state = random_state
         self.T = T
         self.beta = beta
         match init:
@@ -49,11 +38,19 @@ class SparseNMF(NMF):
                 self.H = H0
             case _:
                 raise ValueError("Invalid initialization method.")
-        self.errors = []  # To store reconstruction errors
+        self.errors = [] 
         self.V_norm = self.compute_frobenius_norm(V)
    
+   
+   
+   
     def compute_frobenius_norm(self, M) -> float:
-        """Compute the Frobenius norm of a (possibly sparse) matrix."""
+        """
+        # * Compute the Frobenius norm of a (possibly sparse) matrix.
+        In case of a sparse matrix we don't need to visit all the elements, we can use the attributes of the sparse matrix class provided by scipy and 
+        compute the norm by using the definition
+        
+        """
         if sparse.isspmatrix(M):
             return float(np.sqrt((M.data ** 2).sum()))
         else:

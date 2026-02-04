@@ -8,8 +8,8 @@ This file is an example of application of Non negative matrix factorization to t
 The dataset is a 9394 x 19528 word count matrix, a column of the matrix represents a document and each row corresponds to a word.
 """
 
-def load_dataset():
-    mat_data = scipy.io.loadmat('data/tdt2_top30.mat')
+def load_dataset(path: str = 'data/tdt2_top30.mat'):
+    mat_data = scipy.io.loadmat(path)
     X = mat_data['X'].T
     # Extract word labels (they might be under different variable names)
     # Common names: 'fea', 'words', 'vocab', 'terms'
