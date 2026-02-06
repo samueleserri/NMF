@@ -1,23 +1,22 @@
 import numpy as np
 import pandas as pd
 from nmf import NonNegMatrix, NMF
-from utils import display, measure_sparsity
+from utils import display
 
 """
 This file reproduces the results obtained by Daniel D. Lee & H. Sebastian Seung in their paper: https://www.nature.com/articles/44565 .
-The dataset CBCL consists in a 2429 x 361 pixels where each column represent a 19 x 19 grey scale image of a face. In total there are 361 pictures.  
-The NMF model with MU algorithm is applied with a factorization rank r = 49. After the fitting the two matrices W of size (2429 x 49) and H of size (49 x 361) are obtained.
+The dataset CBCL consists in a  361 x 2429 pixels where each column represent a 19 x 19 grey scale image of a face. In total there are 2429 pictures.  
+The NMF model with MU algorithm is applied with a factorization rank r = 49. After the fitting the two matrices W of size (361 x 49) and H of size (49 x 2429) are obtained.
 Due to the non-negative constraints of the NMF model the matrix W can still be interpreted in the same way as the original matrix, each column of the W can be reshaped
 to a 19 x 19 matrix and displayed. The main result of Lee & Seung is that NMF is able to learn a representation of faces by "parts".
-TODO: weights visualization.
 """
 
 def load_dataset() -> NonNegMatrix:
     """
     Load the CBCL face dataset from csv file and return it as NonNegMatrix
-    return: NonNegMatrix of shape (2429, 361)
-    2429 = 19 x 19 pixels
-    361 = number of images
+    return: NonNegMatrix of shape (361, 2429)
+    361 = 19 x 19 pixels
+    2429 = number of images
     -------------------
     dataset path: data/CBCL.csv
     -------------------
@@ -33,10 +32,10 @@ def fit_model(rank:int, show: bool = False, solver: str = "beta_MU", beta: float
     return: fitted NMF model
     """ 
     V = load_dataset()    
+    print(f"shape of the data matrix: {V.shape}")
     if show: # original images displayed if True
         display(V[:, :rank], perrow=7, Li=19, Co=19, bw=0, show=True)
-    sparsity = measure_sparsity(V)
-    print(f"sparsity of the data matrix: {sparsity}")
+
     # instantiate and fit model
     model = NMF(V, rank)
     model.fit(solver, beta)
@@ -72,17 +71,6 @@ def run_example(show: bool = False) -> None:
     if show:
         display(fitted_model.W[:,:reconstruction_rank], perrow=7,Li=19, Co=19, bw=0, show=True)
     print(f"reconstruction error: {fitted_model.get_final_error()}")
-    print(f"sparsity of W:{measure_sparsity(fitted_model.W)}")
-    print(f"sparsity of H:{measure_sparsity(fitted_model.H)}")
-    # heat map of the weights in H
-    # plt.imshow(fitted_model.H[:,0], aspect='auto', cmap='grey')
-    # plt.colorbar()
-    # plt.title("Heatmap of the weights in H")
-    # plt.xlabel("Images")
-    # plt.ylabel("Components")
-    # plt.show()
-    
-    # reconstruct_face(2, fitted_model)
 
 
 
