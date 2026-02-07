@@ -51,7 +51,7 @@ class SparseNMF(NMF):
         compute the norm by using the definition
         
         """
-        if sparse.isspmatrix(M):
+        if sparse.issparse(M):
             return float(np.sqrt((M.data ** 2).sum()))
         else:
             return float(np.linalg.norm(M))

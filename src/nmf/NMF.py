@@ -265,19 +265,19 @@ class NMF:
             H = H * (W^T V) / (W^T W H)
         """
 
-        self.__compute_Fro_error() # e(0)
+        self._compute_Fro_error() # e(0)
 
         for t in range(self.max_iter):
             # first block
             W_num = self.V @ self.H.T
             W_den = self.W @ (self.H @ self.H.T)
-            self.W = np.multiply(self.W, W_num / (W_den + 1e-10))# update W
+            self.W = np.multiply(self.W, W_num / (W_den + 1e-10)) # update W
             # second block
             H_num = self.W.T @ self.V
             H_den = (self.W.T @ self.W) @ self.H
             self.H = np.multiply(self.H, H_num / (H_den + 1e-10)) # update H
             # error at step t
-            self.__compute_Fro_error()
+            self._compute_Fro_error()
             if t >= self.T and np.abs(self.errors[t - self.T] - self.errors[t]) <= self.tol*self.errors[t]:
                 break
 
@@ -291,7 +291,7 @@ class NMF:
         """
         print(f"value of beta: {beta}")
         self.V_beta_div = beta_loss(self.V, np.mean(self.V)*np.ones(self.V.shape), beta)
-        self.errors.append(beta_loss(self.V, self.W @ self.H, beta)/ (self.V_beta_div + 1e-10))
+        self._compute_Beta_error(beta) # e(0)
         eps = 1e-10
         for t in range(self.max_iter):
             WH = np.maximum(self.W @ self.H, 0)
@@ -318,9 +318,7 @@ class NMF:
             self.H = NonNegMatrix(H_new) # update H
 
             # error at step t (beta-divergence)
-            rel_err = beta_loss(self.V, self.W @ self.H, beta)/(self.V_beta_div + 1e-10)
-            self.errors.append(rel_err)
-
+            self._compute_Beta_error(beta) # e(t)
             if t >= self.T and np.abs(self.errors[t - self.T] - self.errors[t]) <= self.tol * self.errors[t]:
                 break
 
@@ -339,7 +337,7 @@ class NMF:
         end for
         """
         # initial error
-        self.__compute_Fro_error()  # e(0)
+        self._compute_Fro_error()  # e(0)
 
         for t in range(self.max_iter):
             # Solve for W: min_{W >= 0} ||V - WH||_F^2
@@ -355,7 +353,7 @@ class NMF:
                 self.H[:, j] = np.maximum(0, np.linalg.solve(WTW + 1e-10 * np.eye(self.rank), WTV[:, j]))
 
             # error at step t
-            self.__compute_Fro_error()
+            self._compute_Fro_error()
             if t >= self.T and np.abs(self.errors[t - self.T] - self.errors[t]) <= self.tol * self.errors[t]:
                 break
 
@@ -374,7 +372,7 @@ class NMF:
         end for
         """
         # initial error
-        self.__compute_Fro_error()  # e(0)
+        self._compute_Fro_error()  # e(0)
 
         for t in range(self.max_iter):
             LW = (np.linalg.norm(self.H, 2) ** 2) + 1e-10
@@ -387,7 +385,7 @@ class NMF:
             self.H = NonNegMatrix(np.maximum(0, self.H - grad_H / LH))
 
             # error at step t
-            self.__compute_Fro_error()
+            self._compute_Fro_error()
             if t >= self.T and np.abs(self.errors[t - self.T] - self.errors[t]) <= self.tol * self.errors[t]:
                 break
             
@@ -399,7 +397,7 @@ class NMF:
         formula W[:,k] <- max(0, VH^T[:,k] - sum_{l \not= k}W[:,l](HH^T)[l,k])
                 H[j,:] <- max(0, W^TV[j,:] - sum_{l \not= j}W^TW[k,l](H)[l,:])
         """
-        self.errors.append(np.linalg.norm(self.V - self.W @ self.H, 'fro') / (self.V_norm + 1e-10))  # e(0)
+        self.errors.append(0.5*np.linalg.norm(self.V - self.W @ self.H, 'fro') / (self.V_norm + 1e-10))  # e(0)
         for t in range(self.max_iter):
             # compute VH^T and HH^T
             VHT = self.V @ self.H.T
@@ -422,15 +420,25 @@ class NMF:
                         sum += WTW[k,l] * self.H[l,:]
                 self.H[k,:] = np.maximum(0, (WTV[k,:] - sum)/(WTW[k,k] + 1e-10)) # update row of H
             # error at step t
-            self.errors.append(np.linalg.norm(self.V - self.W @ self.H, 'fro') / (self.V_norm + 1e-10))
+            self.errors.append(0.5*np.linalg.norm(self.V - self.W @ self.H, 'fro') / (self.V_norm + 1e-10))
             if t >= self.T and np.abs(self.errors[t - self.T] - self.errors[t]) <= self.tol*self.errors[t]:
                 break            
 
 
 
-    def __compute_Fro_error(self) -> None:
+    def _compute_Beta_error(self, beta: float) -> None:
         """
-        Private method.
+        Compute the current relative error and append it to self.errors.
+
+        The relative error is the beta-divergence between V and WH normalized by the
+        beta-divergence between V and the mean of V:
+            e(t) = D_beta(V || WH) / D_beta(V || mean(V))
+        """
+        rel_err = beta_loss(self.V, self.W @ self.H, beta)/(self.V_beta_div + 1e-10)
+        self.errors.append(rel_err)
+
+    def _compute_Fro_error(self) -> None:
+        """
         Compute the current relative error and append it to self.errors.
 
         The relative error is the Frobenius norm of the residual normalized by the

@@ -1,5 +1,4 @@
 import numpy  as np
-
 """
     This file contains the implementation of the beta divergence and the relative loss used in Multiplicative Updates for β-NMF
     -----------------------
@@ -38,5 +37,5 @@ def beta_loss(X: np.ndarray, Y: np.ndarray, beta: float) -> float:
     """
     Sum of element-wise beta-divergence between X and Y.
     """
-    return float(np.sum(beta_divergence(X, Y, beta)))
+    return 0.5*float(np.sum(beta_divergence(X, Y, beta)))
 
