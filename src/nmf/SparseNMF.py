@@ -30,7 +30,7 @@ class SparseNMF(NMF):
                 self.W = np.random.rand(self.m, self.rank)
                 self.H = np.random.rand(self.rank, self.n)
             case "nndsvd":
-                self.__NNSVD_init()
+                self._NNSVD_init()
             case "custom":
                 if W0 is None or H0 is None:
                     raise ValueError("Custom initialization requires W0 and H0.")
@@ -40,6 +40,15 @@ class SparseNMF(NMF):
                 raise ValueError("Invalid initialization method.")
         self.errors = [] 
         self.V_norm = self.compute_frobenius_norm(V)
+
+
+    def fit(self, solver: str, beta: float | None = None):
+        if solver == "beta_MU":
+            if beta == 2:
+                return super().fit("MU")
+            else:
+                raise NotImplementedError("beta_MU solver is not implemented yet for sparse input matrices with beta != 2.")
+        return super().fit(solver)
    
    
    
@@ -55,6 +64,10 @@ class SparseNMF(NMF):
             return float(np.sqrt((M.data ** 2).sum()))
         else:
             return float(np.linalg.norm(M))
+        
+
+    def _compute_Fro_error(self) -> None:
+        self.errors.append(self.compute_frobenius_norm(self.V - self.W @ self.H) / self.V_norm)
             
 
     

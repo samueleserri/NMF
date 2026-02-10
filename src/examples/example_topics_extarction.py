@@ -125,31 +125,33 @@ def load_dataset(n_samples: int, n_features: int):
     print(f"sparsity of the data matrix: {sparsity}")
     return tfidf, tfidf_vectorizer
 
-def fit_model(n_samples: int, n_features: int, n_components: int, n_top_words: int):
+def fit_model(n_samples: int, n_features: int, n_components: int, n_top_words: int, solver: str = "ALS"):
     """
     Run the end-to-end example: load data, fit SepNMF, and plot topics.
 
     Steps
     -----
     1. Load TF–IDF features with load_dataset.
-    2. Convert TF–IDF sparse matrix to a dense non-negative matrix for SepNMF.
+    2. Use the sparse TF–IDF matrix directly with SparseNMF.
        (bear in mind memory usage; for large corpora use chunking or a sparse-aware algorithm)
-    3. Instantiate SepNMF and fit using ALS solver.
+    3. Instantiate SepNMF and fit using the specified solver.
     4. Plot top words per discovered topic.
 
     Parameters
     ----------
     n_samples, n_features, n_components, n_top_words : ints
         Controls dataset size, vocabulary size, number of topics and words shown.
+    solver : str, optional
+        Solver to use for NMF. Default is "ALS".
     """
     
     tfidf, tfidf_vectorizer = load_dataset(n_samples, n_features)
-    model = SparseNMF(tfidf.toarray(), n_components) # type: ignore
+    model = SparseNMF(tfidf, n_components, max_iter=1000) # type: ignore
 
-    model.fit(solver="beta_MU", beta=2) # type: ignore
-
+    model.fit(solver=solver, beta=2) # type: ignore
+    model.plot_errors()
     tfidf_feature_names = tfidf_vectorizer.get_feature_names_out()
-    plot_top_words(model, tfidf_feature_names, n_top_words, "NMF topics with ALS solver and Frobenius norm")
+    plot_top_words(model, tfidf_feature_names, n_top_words, f"NMF topics with ALS {solver} and Frobenius norm")
 
 
 def run_example():

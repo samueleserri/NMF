@@ -159,7 +159,7 @@ class NMF:
                 self.W = NonNegMatrix(np.random.rand(self.m, self.rank))
                 self.H = NonNegMatrix(np.random.rand(self.rank, self.n))
             case "nndsvd":
-                self.__NNSVD_init()
+                self._NNSVD_init()
             case "custom":
                 if W0 is None or H0 is None:
                     raise ValueError("Please provide both W0 and H0 for custom initialization.")
@@ -450,7 +450,7 @@ class NMF:
         self.errors.append(rel_err)
 
 
-    def __NNSVD_init(self) -> None:
+    def _NNSVD_init(self) -> None:
         """
         Non-negative Double Singular Value Decomposition (NNDSVD) initialization.
         Reference:
