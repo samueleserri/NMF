@@ -144,9 +144,9 @@ def fit_model(n_samples: int, n_features: int, n_components: int, n_top_words: i
     """
     
     tfidf, tfidf_vectorizer = load_dataset(n_samples, n_features)
-    model = SparseNMF(tfidf, n_components) # type: ignore
+    model = SparseNMF(tfidf.toarray(), n_components) # type: ignore
 
-    model.fit(solver="PGD")
+    model.fit(solver="beta_MU", beta=2) # type: ignore
 
     tfidf_feature_names = tfidf_vectorizer.get_feature_names_out()
     plot_top_words(model, tfidf_feature_names, n_top_words, "NMF topics with ALS solver and Frobenius norm")

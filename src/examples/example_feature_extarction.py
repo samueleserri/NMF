@@ -34,7 +34,7 @@ def fit_model(rank:int, show: bool = False, solver: str = "beta_MU", beta: float
     V = load_dataset()    
     print(f"shape of the data matrix: {V.shape}")
     if show: # original images displayed if True
-        display(V[:, :rank], perrow=7, Li=19, Co=19, bw=0, show=True)
+        display(V[:, :rank], perrow=7, height=19, width=19, bw=0, show=True)
 
     # instantiate and fit model
     model = NMF(V, rank)
@@ -69,7 +69,7 @@ def run_example(show: bool = False) -> None:
     reconstruction_rank = 49
     fitted_model = fit_model(reconstruction_rank, solver="beta_MU")
     if show:
-        display(fitted_model.W[:,:reconstruction_rank], perrow=7,Li=19, Co=19, bw=0, show=True)
+        display(fitted_model.W[:,:reconstruction_rank], perrow=7, height=19, width=19, bw=0, show=True)
     print(f"reconstruction error: {fitted_model.get_final_error()}")
 
 

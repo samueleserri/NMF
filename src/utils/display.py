@@ -2,15 +2,16 @@ import math
 import numpy as np
 import matplotlib.pyplot as plt
 
-def display(V, perrow, Li, Co, bw=0, show=True, column_order=True):
+def display(V, perrow, height, width, bw=0, show=True, column_order=True):
     """
-    Display columns of V as Li x Co images arranged in a grid with `perrow` images per row.
-    V : (m x r) numpy array where m == Li*Co
+    Display columns of V as height x width images arranged in a grid with `perrow` images per row.
+    V : (m x r) numpy array where m == height*width
     perrow : number of images per row
-    Li, Co : image height and width
+    height, width : image height and width
     bw : if 0 (default) display high intensities as black (MATLAB behaviour),
          if 1 display high intensities as white
     show : if True, show the figure with matplotlib
+    column_order: if true the images are reshaped with order = F (Fortran-like index order and MATLAB-style)
     Returns the assembled display image Ass (float values in [0,1]).
 
     # credits: I have adapted the function found in N.Gillis repository of his book to display images in a CBCL-like dataset:
@@ -27,8 +28,8 @@ def display(V, perrow, Li, Co, bw=0, show=True, column_order=True):
     # grid geometry
     n_rows = math.ceil(r / perrow)
     sep = 1  # separator thickness (1 pixel) between images
-    grid_h = n_rows * Li + (n_rows - 1) * sep
-    grid_w = perrow * Co + (perrow - 1) * sep
+    grid_h = n_rows * height + (n_rows - 1) * sep
+    grid_w = perrow * width + (perrow - 1) * sep
 
     # initialize with ones (background)
     Ass = np.ones((grid_h, grid_w), dtype=float)
@@ -38,13 +39,13 @@ def display(V, perrow, Li, Co, bw=0, show=True, column_order=True):
         for col in range(perrow):
             if idx >= r:
                 break
-            top = row * (Li + sep)
-            left = col * (Co + sep)
+            top = row * (height + sep)
+            left = col * (width + sep)
             if column_order:
-                patch = V[:, idx].reshape((Li, Co), order='F')
+                patch = V[:, idx].reshape((height, width), order='F')
             else:
-                patch = V[:, idx].reshape((Li, Co))
-            Ass[top:top+Li, left:left+Co] = patch
+                patch = V[:, idx].reshape((height, width))
+            Ass[top:top+height, left:left+width] = patch
             idx += 1
     if show:
         plt.figure(figsize=(8, 8))
