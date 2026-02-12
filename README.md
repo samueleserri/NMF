@@ -3,10 +3,10 @@
 This code was developed as part of  my bachelor thesis work at Trieste University. 
 It contains the implementation of algorithms for solving the Non-Negative matrix factorization (NMF) problem.
 
-The NMF problem consists in: given a non-negative matrix $V \in \R^{m \times n}$ and a factorization rank $r$, find to non-negative matrices $W \in \R^{m \times r}$ and $W \in \R^{r \times n}$ such that their product approximates  the original matrix $V$ as closely as possible.  
+The NMF problem consists in: given a non-negative matrix $V \in \mathbb{R}^{m \times n}$ and a factorization rank $r$, find to non-negative matrices $W \in \mathbb{R}^{m \times r}$ and $W \in \mathbb{R}^{r \times n}$ such that their product approximates  the original matrix $V$ as closely as possible.  
 This is defined in terms of a constrained optimization problem:
 ```math
-\min_{W \in \R^{m \times r}, H \in \R^{r \times n}} D(V, WH) \\
+\min_{W \in \mathbb{R}^{m \times r}, H \in \mathbb{R}^{r \times n}} D(V, WH) \\
 \text{subject to} \\
 W \geq 0, H \geq 0
 ```
