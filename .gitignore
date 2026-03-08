@@ -59,3 +59,6 @@ desktop.ini
 tmp/
 temp/
 .cache/
+
+# numpy 
+*.npy

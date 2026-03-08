@@ -118,7 +118,7 @@ class NMF:
         V_approx = model.reconstruct()
     """
 
-    def __init__(self, V: np.ndarray, rank: int, max_iter: int = 1000, tol: float = 1e-4, T: int = 10, column_stochastic : bool = False, init: str = "random", W0: Optional[np.ndarray] = None, H0: Optional[np.ndarray] = None) -> None:
+    def __init__(self, V: np.ndarray, rank: int, max_iter: int = 1000, tol: float = 1e-4, T: int = 10, column_stochastic : bool = False, init: str = "random", W0: Optional[np.ndarray] = None, H0: Optional[np.ndarray] = None, time_limit: float = 30.0) -> None:
         """
         Initialize the NMF model with the input matrix and parameters.
         Parameters
@@ -151,6 +151,7 @@ class NMF:
         self.max_iter = max_iter
         self.tol = tol
         self.T = T
+        self.time_limit = time_limit
         self.m, self.n = V.shape
         self.errors = []
         self.V_norm = beta_loss(self.V, np.mean(self.V)*np.ones(self.V.shape), 2)
@@ -172,7 +173,7 @@ class NMF:
             case _:
                 raise ValueError(f"Initialization method {init} not recognized.")
     
-    def fit(self, solver: str, beta: Optional[float] = None):
+    def fit(self, solver: str, beta: Optional[float] = None) -> None:
         """
         Fit the NMF model using the selected update solver.
         Parameters
@@ -225,6 +226,33 @@ class NMF:
         if self.n_iter == self.max_iter:
             print("Max iter reached: you may try to increase the value")
 
+    def plot_time_vs_error(self):
+        """
+        Plot the time taken for each iteration against the corresponding error.
+        This can help visualize the convergence behavior of the algorithm over time.
+        Returns:
+            None
+        --------------      
+        Usage example:
+                model.plot_time_vs_error()
+        """
+        if not hasattr(self, 'fit_time') or not hasattr(self, 'n_iter'):
+            raise ValueError("Model must be fitted before plotting time vs error.")
+        time_per_iter = self.fit_time / self.n_iter if self.n_iter > 0 else float('inf')
+        times = np.arange(len(self.errors)) * time_per_iter
+        print(times.shape)
+        print(self.n_iter)
+        plt.figure(figsize=(6,4))
+        plt.scatter(times, self.errors, marker='x', s=50)
+        plt.plot(times, self.errors, linestyle='--', alpha=0.7)
+        plt.yscale('log')
+        plt.xlabel("Time (s)")
+        plt.ylabel("Relative error (log scale)")
+        plt.title("NMF reconstruction error over time")
+        plt.grid(True, which="both", ls="--")
+        plt.tight_layout()
+        plt.show()
+
     def plot_errors(self):  
         """
         Plot the normalized reconstruction error history on a logarithmic y-scale. 
@@ -266,8 +294,9 @@ class NMF:
         """
 
         self._compute_Fro_error() # e(0)
-
-        for t in range(self.max_iter):
+        t = 0
+        start_time = time.perf_counter()
+        while time.perf_counter() - start_time < self.time_limit and t < self.max_iter:
             # first block
             W_num = self.V @ self.H.T
             W_den = self.W @ (self.H @ self.H.T)
@@ -280,6 +309,8 @@ class NMF:
             self._compute_Fro_error()
             if t >= self.T and np.abs(self.errors[t - self.T] - self.errors[t]) <= self.tol*self.errors[t]:
                 break
+            t+=1
+            
 
     def __beta_update(self, beta: float) -> None:
         """
@@ -293,7 +324,9 @@ class NMF:
         self.V_beta_div = beta_loss(self.V, np.mean(self.V)*np.ones(self.V.shape), beta)
         self._compute_Beta_error(beta) # e(0)
         eps = 1e-10
-        for t in range(self.max_iter):
+        t = 0
+        start_time = time.perf_counter()
+        while time.perf_counter() - start_time < self.time_limit and t < self.max_iter:
             WH = np.maximum(self.W @ self.H, 0)
             # element-wise powers
             WH_beta_m2 = np.power(WH, beta - 2)
@@ -321,7 +354,7 @@ class NMF:
             self._compute_Beta_error(beta) # e(t)
             if t >= self.T and np.abs(self.errors[t - self.T] - self.errors[t]) <= self.tol * self.errors[t]:
                 break
-
+            t+=1
 
     
     def __ALS_update(self) -> None:
@@ -338,8 +371,9 @@ class NMF:
         """
         # initial error
         self._compute_Fro_error()  # e(0)
-
-        for t in range(self.max_iter):
+        t = 0
+        start_time = time.perf_counter()
+        while time.perf_counter() - start_time < self.time_limit and t < self.max_iter:
             # Solve for W: min_{W >= 0} ||V - WH||_F^2
             HHT = self.H @ self.H.T
             VHT = self.V @ self.H.T
@@ -356,6 +390,7 @@ class NMF:
             self._compute_Fro_error()
             if t >= self.T and np.abs(self.errors[t - self.T] - self.errors[t]) <= self.tol * self.errors[t]:
                 break
+            t+= 1
 
     def __PGD_update(self) -> None:
         """
@@ -374,7 +409,9 @@ class NMF:
         # initial error
         self._compute_Fro_error()  # e(0)
 
-        for t in range(self.max_iter):
+        t = 0
+        start_time = time.perf_counter()
+        while time.perf_counter() - start_time < self.time_limit and t < self.max_iter:
             LW = (np.linalg.norm(self.H, 2) ** 2) + 1e-10
             LH = (np.linalg.norm(self.W, 2) ** 2) + 1e-10
             # Gradient w.r.t W: ((W H - V) H^T)
@@ -388,7 +425,7 @@ class NMF:
             self._compute_Fro_error()
             if t >= self.T and np.abs(self.errors[t - self.T] - self.errors[t]) <= self.tol * self.errors[t]:
                 break
-            
+            t += 1
 
 
 
@@ -398,7 +435,9 @@ class NMF:
                 H[j,:] <- max(0, W^TV[j,:] - sum_{l \not= j}W^TW[k,l](H)[l,:])
         """
         self.errors.append(0.5*np.linalg.norm(self.V - self.W @ self.H, 'fro') / (self.V_norm + 1e-10))  # e(0)
-        for t in range(self.max_iter):
+        t = 0
+        start_time = time.perf_counter()
+        while time.perf_counter() - start_time < self.time_limit and t < self.max_iter:
             # compute VH^T and HH^T
             VHT = self.V @ self.H.T
             HHT = self.H @ self.H.T
@@ -422,8 +461,8 @@ class NMF:
             # error at step t
             self.errors.append(0.5*np.linalg.norm(self.V - self.W @ self.H, 'fro') / (self.V_norm + 1e-10))
             if t >= self.T and np.abs(self.errors[t - self.T] - self.errors[t]) <= self.tol*self.errors[t]:
-                break            
-
+                break           
+            t += 1
 
 
     def _compute_Beta_error(self, beta: float) -> None:
@@ -450,7 +489,7 @@ class NMF:
         self.errors.append(rel_err)
 
 
-    def _NNSVD_init(self) -> None:
+    def _NNSVD_init(self, nndsvda: bool = False) -> None:
         """
         Non-negative Double Singular Value Decomposition (NNDSVD) initialization.
         Reference:
@@ -486,6 +525,11 @@ class NMF:
                 self.W[:, j] = np.sqrt(S[j] * m_neg) * (u_neg / (u_neg_norm + 1e-10))
                 self.H[j, :] = np.sqrt(S[j] * m_neg) * (v_neg / (v_neg_norm + 1e-10))
         print("NNDSVD initialization completed.")
+        if nndsvda:
+            # NNDSVDa: replace zeros with the average of V to avoid zero-locking
+            avg = np.mean(self.V)
+            self.W[self.W == 0] = avg
+            self.H[self.H == 0] = avg
 
 
     def get_final_error(self) -> float:

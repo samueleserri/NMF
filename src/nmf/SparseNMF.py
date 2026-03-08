@@ -8,6 +8,7 @@ class SparseNMF(NMF):
     def __init__(self, V: sparse.csr_array, r: int, init: Optional[str] = "random",
                  max_iter: int = 1000, tol: float = 1e-4, T: int  = 10, 
                 beta: float = 2, W0: Optional[np.ndarray] = None, H0: Optional[np.ndarray] = None,
+                time_limit: float = 30.0
                 ):
         """
         See NMF class for documentation.
@@ -24,6 +25,7 @@ class SparseNMF(NMF):
         self.max_iter = max_iter
         self.tol = tol
         self.T = T
+        self.time_limit = time_limit
         self.beta = beta
         match init:
             case "random":
@@ -45,10 +47,10 @@ class SparseNMF(NMF):
     def fit(self, solver: str, beta: float | None = None):
         if solver == "beta_MU":
             if beta == 2:
-                return super().fit("MU")
+                return super().fit(solver="MU")
             else:
                 raise NotImplementedError("beta_MU solver is not implemented yet for sparse input matrices with beta != 2.")
-        return super().fit(solver)
+        return super().fit(solver, beta=beta)
    
    
    
