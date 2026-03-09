@@ -161,6 +161,8 @@ class NMF:
                 self.H = NonNegMatrix(np.random.rand(self.rank, self.n))
             case "nndsvd":
                 self._NNSVD_init()
+            case "nndsvda":
+                self._NNSVD_init(nndsvda=True)
             case "custom":
                 if W0 is None or H0 is None:
                     raise ValueError("Please provide both W0 and H0 for custom initialization.")
