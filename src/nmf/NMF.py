@@ -118,7 +118,7 @@ class NMF:
         V_approx = model.reconstruct()
     """
 
-    def __init__(self, V: np.ndarray, rank: int, max_iter: int = 1000, tol: float = 1e-4, T: int = 10, column_stochastic : bool = False, init: str = "random", W0: Optional[np.ndarray] = None, H0: Optional[np.ndarray] = None, time_limit: float = 30.0) -> None:
+    def __init__(self, V: np.ndarray, rank: int, max_iter: int = 1000, tol: float = 1e-4, T: int = 10, column_stochastic : bool = False, init: str = "random", random_state = None ,W0: Optional[np.ndarray] = None, H0: Optional[np.ndarray] = None, time_limit: float = 30.0) -> None:
         """
         Initialize the NMF model with the input matrix and parameters.
         Parameters
@@ -155,6 +155,9 @@ class NMF:
         self.m, self.n = V.shape
         self.errors = []
         self.V_norm = beta_loss(self.V, np.mean(self.V)*np.ones(self.V.shape), 2)
+        self.random_state = random_state
+        if random_state is not None:
+            np.random.seed(random_state)
         match init:
             case "random":
                 self.W = NonNegMatrix(np.random.rand(self.m, self.rank))
